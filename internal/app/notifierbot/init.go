@@ -10,22 +10,25 @@ type Config struct {
 	App struct {
 		Name string `yaml:"name"`
 	} `yaml:"app"`
+	Listener struct {
+		Address string `yaml:"address"`
+	} `yaml:"listener"`
 }
 
-var conf Config
+var Conf Config
 
 func init() {
-	dirPath, _ := os.Getwd()
-	configFile, _ := os.Open(dirPath + "/configs/notifierbot.yml")
+	p, _ := os.Getwd()
+	f, _ := os.Open(p + "/configs/notifierbot.yml")
 	defer func(configFile *os.File) {
 		goerr.Fatal(
 			configFile.Close(),
 			"[Error] notifierbot.init: Close config file",
 		)
-	}(configFile)
+	}(f)
 
-	decoder := yaml.NewDecoder(configFile)
-	err := decoder.Decode(&conf)
+	d := yaml.NewDecoder(f)
+	err := d.Decode(&Conf)
 	goerr.Fatal(
 		err,
 		"[Error] notifierbot.init: Reading config",

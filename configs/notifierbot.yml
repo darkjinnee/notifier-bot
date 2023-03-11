@@ -1,2 +1,4 @@
 app:
   name: "notifier"
+listener:
+  address: "127.0.0.1:3333"
