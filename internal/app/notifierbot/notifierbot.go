@@ -2,6 +2,8 @@ package notifierbot
 
 import (
 	"fmt"
+	"github.com/darkjinnee/notifierbot/internal/pkg/http"
+	"github.com/darkjinnee/notifierbot/internal/pkg/tgbot"
 	"strings"
 )
 
@@ -11,7 +13,24 @@ func Run() {
 		strings.ToTitle(Conf.App.Name),
 	)
 
-	h := []Header{
+	bot := tgbot.New(Conf.Bot.Token, Conf.Bot.Debug)
+	u := tgbot.GetUpdateConf(Conf.Bot.Timeout)
+	updatesBot := bot.GetUpdatesChan(u)
+
+	go func() {
+		for update := range updatesBot {
+			if update.Message == nil {
+				continue
+			}
+
+			NewChat(
+				update.Message.Chat.ID,
+				update.Message.From.UserName,
+			)
+		}
+	}()
+
+	h := []http.Header{
 		{
 			Key:   "Accept",
 			Value: "application/json",
@@ -21,14 +40,20 @@ func Run() {
 			Value: "application/json",
 		},
 	}
-
-	r := []Route{
+	r := []http.Route{
 		{
 			Headers: h,
 			Method:  "GET",
 			Pattern: "/",
 			Handler: Home,
 		},
+		{
+			Headers: h,
+			Method:  "GET",
+			Pattern: "/test",
+			Handler: Test,
+		},
 	}
-	Listen(r)
+	addr := Conf.Http.Host + ":" + Conf.Http.Port
+	http.Listen(r, addr)
 }

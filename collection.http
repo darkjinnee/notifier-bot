@@ -1,0 +1,3 @@
+### Test
+GET {{base_url}}/test
+Accept: application/json

@@ -1,4 +1,12 @@
 app:
   name: "notifier"
-listener:
-  address: "127.0.0.1:3333"
+api:
+  url: "https://64300ebab289b1dec4c04f24.mockapi.io"
+  token: "6187950432:AAGb6-3TSRbfOvOjEZHLGbB_0h74KEqyATI"
+http:
+  host: "127.0.0.1"
+  port: "3333"
+bot:
+  token: "6187950432:AAGb6-3TSRbfOvOjEZHLGbB_0h74KEqyATI"
+  timeout: 30
+  debug: true

@@ -1,7 +1,7 @@
 package notifierbot
 
 import (
-	"github.com/darkjinnee/go-err"
+	goerr "github.com/darkjinnee/go-err"
 	"gopkg.in/yaml.v2"
 	"os"
 )
@@ -10,9 +10,19 @@ type Config struct {
 	App struct {
 		Name string `yaml:"name"`
 	} `yaml:"app"`
-	Listener struct {
-		Address string `yaml:"address"`
-	} `yaml:"listener"`
+	Api struct {
+		URL   string `yaml:"url"`
+		Token string `yaml:"token"`
+	} `yaml:"api"`
+	Http struct {
+		Host string `yaml:"host"`
+		Port string `yaml:"port"`
+	} `yaml:"http"`
+	Bot struct {
+		Token   string `yaml:"token"`
+		Timeout int    `yaml:"timeout"`
+		Debug   bool   `yaml:"debug"`
+	} `yaml:"bot"`
 }
 
 var Conf Config
@@ -23,7 +33,7 @@ func init() {
 	defer func(configFile *os.File) {
 		goerr.Fatal(
 			configFile.Close(),
-			"[Error] notifierbot.init: Close config file",
+			"[Error] notifierbot.init: Failed close config file",
 		)
 	}(f)
 
@@ -31,6 +41,6 @@ func init() {
 	err := d.Decode(&Conf)
 	goerr.Fatal(
 		err,
-		"[Error] notifierbot.init: Reading config",
+		"[Error] notifierbot.init: Failed reading config",
 	)
 }
