@@ -1,0 +1,57 @@
+version: '3.6'
+
+services:
+  redis:
+    env_file: .env
+    image: redis:alpine
+    container_name: notifier_redis
+    ports:
+      - '${DOCKER_REDIS_PORT:-6379}:6379'
+    volumes:
+      - ./docker/scripts/redis.sh:/scripts/redis.sh
+    environment:
+      PASSWORD: ${REDIS_PASSWORD}
+    command: /scripts/redis.sh
+
+  mysql:
+    platform: linux/amd64
+    env_file: .env
+    image: mysql:5.7
+    container_name: notifier_mysql
+    ports:
+      - '${DOCKER_MYSQL_PORT:-3306}:3306'
+    volumes:
+      - ./docker/services/mysql/conf/custom.cnf:/etc/mysql/custom.cnf
+      - ./docker/services/mysql/var/backups/sql:/var/backups/sql
+      # - ./docker/services/mysql/var/backups/sql/dump.sql:/docker-entrypoint-initdb.d/dump.sql
+      # - ./docker/services/mysql/var/lib/mysql:/var/lib/mysql
+    environment:
+      LANG: C.UTF_8
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    depends_on:
+      - redis
+
+  golang:
+    env_file: .env
+    image: golang:alpine
+    container_name: notifier_golang
+    working_dir: /var/www/app
+    ports:
+      - '${DOCKER_GOLANG_PORT:-8000}:8000'
+    volumes:
+      - ./:/var/www/app
+      - ./docker/scripts/golang.sh:/scripts/golang.sh
+    environment:
+      COMMAND: ${APP_COMMAND}
+    command: /scripts/golang.sh
+    depends_on:
+      - redis
+      - mysql
+
+networks:
+  default:
+    driver: bridge
