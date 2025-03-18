@@ -2,29 +2,31 @@ package notifierbot
 
 import (
 	"encoding/json"
-	"fmt"
-	"net/http"
+	goerr "github.com/darkjinnee/go-err"
+	"github.com/darkjinnee/notifierbot/pkg/adapter/httpx"
 )
 
-type JsonResponse struct {
-	Welcome string
+func Home(ctx httpx.Context) {
+	r := httpx.DataResponse{
+		Data: []string{"apple", "banana", "cherry"},
+	}
+
+	ctx.ResponseWriter.WriteHeader(200)
+	err := json.NewEncoder(ctx.ResponseWriter).Encode(r)
+	if err != nil {
+		goerr.Log(err, httpx.ErrFailedToEncodeResponse)
+	}
 }
 
-func Home(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
-	_ = json.NewEncoder(w).Encode(JsonResponse{
-		Welcome: "Привет! Это главная страница.",
-	})
-}
+func Test(ctx httpx.Context) {
+	r := httpx.SuccessResponse{
+		Message: "Запрос успешно обработан",
+		Data:    nil,
+	}
 
-func Test(
-	w http.ResponseWriter,
-	r *http.Request,
-) {
-	fmt.Print(r.URL.Query().Get("q"))
-	_ = json.NewEncoder(w).Encode(JsonResponse{
-		Welcome: "Hello World!",
-	})
+	ctx.ResponseWriter.WriteHeader(202)
+	err := json.NewEncoder(ctx.ResponseWriter).Encode(r)
+	if err != nil {
+		goerr.Log(err, httpx.ErrFailedToEncodeResponse)
+	}
 }
