@@ -3,7 +3,7 @@ app:
 api:
   url: "https://64300ebab289b1dec4c04f24.mockapi.io"
   token: "6187950432:AAGb6-3TSRbfOvOjEZHLGbB_0h74KEqyATI"
-http:
+httpx:
   host: "0.0.0.0"
   port: "8000"
 bot:

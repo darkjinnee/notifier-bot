@@ -2,19 +2,26 @@ package httpx
 
 import (
 	"encoding/json"
-	"fmt"
 	goerr "github.com/darkjinnee/go-err"
-	"log"
 	"net/http"
 	"strings"
 )
 
 const (
 	ErrFailedToEncodeResponse = "[Error] httpx.Abort: Failed to encode response"
-	ErrUnexpectedStatusCode   = "[Error] httpx.Abort: Unexpected status code %d"
-	ErrPathMismatch           = "[Error] httpx.Boot: Path mismatch, expected %s but got %s"
 	ErrListenFailed           = "[Error] httpx.Listen: Failed to listen to address"
 )
+
+var JSONHeaders = []Header{
+	{
+		Key:   "Accept",
+		Value: "application/json",
+	},
+	{
+		Key:   "Content-Type",
+		Value: "application/json",
+	},
+}
 
 type ErrorResponse struct {
 	Message string   `json:"message"`
@@ -47,6 +54,14 @@ type Route struct {
 	Handler func(ctx Context)
 }
 
+func (ctx Context) JsonResponse(r interface{}, c int) {
+	ctx.ResponseWriter.WriteHeader(c)
+	err := json.NewEncoder(ctx.ResponseWriter).Encode(r)
+	if err != nil {
+		goerr.Log(err, ErrFailedToEncodeResponse)
+	}
+}
+
 func isJSONHeader(r *http.Request) bool {
 	a := strings.Contains(r.Header.Get("Accept"), "application/json")
 	c := strings.Contains(r.Header.Get("Content-Type"), "application/json")
@@ -72,51 +87,52 @@ func Abort(
 	status int,
 ) {
 	w.WriteHeader(status)
-	switch status {
-	case http.StatusMethodNotAllowed, http.StatusNotFound:
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Message: http.StatusText(status),
-			Errors:  []string{http.StatusText(status)},
-		})
-		if err != nil {
-			goerr.Log(err, ErrFailedToEncodeResponse)
-		}
-	default:
-		err := json.NewEncoder(w).Encode(ErrorResponse{
-			Message: http.StatusText(status),
-			Errors:  []string{http.StatusText(status)},
-		})
-		if err != nil {
-			goerr.Log(err, ErrUnexpectedStatusCode)
-		}
+	err := json.NewEncoder(w).Encode(ErrorResponse{
+		Message: http.StatusText(status),
+		Errors:  []string{http.StatusText(status)},
+	})
+	if err != nil {
+		goerr.Log(err, ErrFailedToEncodeResponse)
 	}
+}
+
+func MappedHandler(routes map[string]Route, m *http.ServeMux) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if isJSONHeader(r) {
+			SetHeaders(w, JSONHeaders)
+		}
+
+		route, exists := routes[r.URL.Path]
+		if !exists {
+			Abort(w, r, http.StatusNotFound)
+			return
+		}
+
+		if !isMethod(r, route.Method) {
+			Abort(w, r, http.StatusMethodNotAllowed)
+			return
+		}
+
+		m.ServeHTTP(w, r)
+	}
+}
+
+func MuxWrapper(r []Route) http.Handler {
+	m := http.NewServeMux()
+	routes := make(map[string]Route)
+
+	for _, i := range r {
+		m.HandleFunc(i.Pattern, i.Boot)
+		routes[i.Pattern] = i
+	}
+
+	return MappedHandler(routes, m)
 }
 
 func (i Route) Boot(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	if isJSONHeader(r) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Accept", "application/json")
-	}
-
-	for key, values := range w.Header() {
-		for _, value := range values {
-			fmt.Printf("Header: %s = %s\n", key, value)
-		}
-	}
-
-	if !isMethod(r, i.Method) {
-		Abort(w, r, http.StatusMethodNotAllowed)
-		return
-	}
-
-	if r.URL.Path != i.Pattern {
-		log.Printf(ErrPathMismatch, i.Pattern, r.URL.Path)
-		Abort(w, r, http.StatusNotFound)
-		return
-	}
 
 	SetHeaders(w, i.Headers)
 	i.Handler(Context{
@@ -126,11 +142,7 @@ func (i Route) Boot(
 }
 
 func Listen(r []Route, addr string) {
-	m := http.NewServeMux()
-	for _, i := range r {
-		m.HandleFunc(i.Pattern, i.Boot)
-	}
-
+	m := MuxWrapper(r)
 	err := http.ListenAndServe(
 		addr,
 		m,

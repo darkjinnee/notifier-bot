@@ -14,10 +14,10 @@ type Config struct {
 		URL   string `yaml:"url"`
 		Token string `yaml:"token"`
 	} `yaml:"api"`
-	Http struct {
+	Httpx struct {
 		Host string `yaml:"host"`
 		Port string `yaml:"port"`
-	} `yaml:"http"`
+	} `yaml:"httpx"`
 	Bot struct {
 		Token   string `yaml:"token"`
 		Timeout int    `yaml:"timeout"`

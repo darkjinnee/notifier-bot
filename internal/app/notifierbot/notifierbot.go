@@ -31,18 +31,18 @@ func Run() {
 
 	r := []httpx.Route{
 		{
-			Headers: nil,
+			Headers: httpx.JSONHeaders,
 			Method:  "GET",
 			Pattern: "/home",
 			Handler: Home,
 		},
 		{
-			Headers: nil,
+			Headers: httpx.JSONHeaders,
 			Method:  "GET",
 			Pattern: "/test",
 			Handler: Test,
 		},
 	}
-	addr := Conf.Http.Host + ":" + Conf.Http.Port
+	addr := Conf.Httpx.Host + ":" + Conf.Httpx.Port
 	httpx.Listen(r, addr)
 }
